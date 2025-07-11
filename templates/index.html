@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Camera Live Stream</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            text-align: center;
+            font-family: Arial, sans-serif;
+        }
+        h1 {
+            margin-top: 20px;
+        }
+        #videoContainer {
+            display: inline-block;
+            border: 5px solid #444;
+            border-radius: 10px;
+            box-shadow: 0 0 15px #000;
+            margin-top: 20px;
+        }
+        #stream {
+            width: 640px;
+            height: 480px;
+            border-radius: 5px;
+        }
+        .info {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ccc;
+        }
+        .controls {
+            margin-top: 20px;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn:hover {
+            background-color: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <h1>AI Camera Live Stream</h1>
+
+    <div id="videoContainer">
+        <img id="stream" src="{{ url_for('video_feed') }}" alt="Live stream not available">
+    </div>
+
+    <div class="info">
+        <p>Live feed from Raspberry Pi AI Camera (IMX500)</p>
+    </div>
+
+    <div class="controls">
+        <button class="btn" onclick="toggleStream()">Pause / Resume</button>
+    </div>
+
+    <script>
+        let streamActive = true;
+        const stream = document.getElementById("stream");
+
+        function toggleStream() {
+            if (streamActive) {
+                stream.src = "";
+            } else {
+                stream.src = "/video_feed";
+            }
+            streamActive = !streamActive;
+        }
+    </script>
+</body>
+</html>
