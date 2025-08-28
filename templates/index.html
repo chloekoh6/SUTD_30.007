@@ -1,79 +1,888 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AI Camera Live Stream</title>
-    <style>
-        body {
-            background-color: #111;
-            color: #fff;
-            text-align: center;
-            font-family: Arial, sans-serif;
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Robot Control UI – Mockup</title>
+  <style>
+    :root{
+      --bg:#ffffff;
+      --panel:#e6e6e6;      /* light grey panels */
+      --panel-2:#dcdcdc;
+      --home:#bfe6f6;       /* light blue */
+      --accent:#8bbad1;     /* bluish arrows */
+      --accent-2:#dba8a8;   /* reddish arrows */
+      --servo:#f5b56d;      /* orange column */
+      --stop:#cf2e2e;       /* red */
+      --brush:#8fc07d;      /* green */
+      --water:#4a9ad6;      /* blue */
+      --ai:#6a4bd6;         /* purple */
+      --text:#111;
+      --muted:#909090;
+      --dot:#6a8b61;        /* leftmost green dot */
+      --radius:14px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; background:var(--bg); color:var(--text);
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      display:grid; place-items:center;
+    }
+	
+    .wrap{
+          width:min(1400px, 94vw); /* expanded from 1100px */
+          padding:18px 16px 24px;
         }
-        h1 {
-            margin-top: 20px;
+
+        .grid{
+          display:grid;
+          grid-template-columns: 2fr 0.75fr 0.95fr 0.45fr; /* widened first column */
+          grid-template-rows: auto 68px 84px 120px;
+          grid-gap:18px 22px;
+          align-items:center;
         }
-        #videoContainer {
-            display: inline-block;
-            border: 5px solid #444;
-            border-radius: 10px;
-            box-shadow: 0 0 15px #000;
-            margin-top: 20px;
+
+        /* ——— Row 1 ——— */
+        .video {
+          grid-column: 1 / 2;
+          grid-row: 1;
+          width: 100%;                  /* fill first column */
+          aspect-ratio: 4 / 3;           /* keeps 640x480 ratio */
+          background: var(--panel, #222);
+          border-radius: 8px;
+          position: relative;
         }
         #stream {
-            width: 640px;
-            height: 480px;
-            border-radius: 5px;
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+          display: block;
         }
-        .info {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #ccc;
+        #noStreamMsg {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          transform: translate(-50%, -50%);
+          color: #888;
+          font-size: 1.5rem;
+          display: none;
+          user-select: none;
         }
-        .controls {
-            margin-top: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
-            background-color: #007bff;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-        }
-        .btn:hover {
-            background-color: #0056b3;
-        }
-    </style>
+    .side-cam{grid-column:2 / 3; grid-row:1; height:320px; background:var(--panel-2); border-radius:8px; padding: 10px;}
+
+    .drive-stack{grid-column:3 / 4; grid-row:1; display:flex; align-items:center; justify-content:center; height:320px;}
+
+    /* Joystick cluster */
+    /* container grid */
+    .joystick-grid {
+      display: grid;
+      grid-template-columns: 84px 84px 84px;
+      grid-template-rows: 118px 84px 118px;
+      gap: 10px;
+      justify-content: center;
+      align-items: center;
+      width: max-content;
+      margin: 0 auto;
+    }
+
+    /* Left and Right blade containers */
+    .blade-container {
+      display: grid;
+      grid-template-rows: 118px 1fr 118px;
+      gap: 10px;
+      width: 84px;
+      border-radius: 12px;
+      padding: 10px 0;
+      box-sizing: border-box;
+      justify-items: center;
+    }
+
+    /* Left container */
+    .blade-container.left {
+      grid-column: 1;
+      grid-row: 1 / span 3;
+      background-color: #acc7d0; /* light blue */
+    }
+
+    /* Right container */
+    .blade-container.right {
+      grid-column: 3;
+      grid-row: 1 / span 3;
+      background-color: #f9a3a3; /* light red */
+    }
+
+    /* Center circle */
+    .joy-center {
+      grid-column: 2;
+      grid-row: 2;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 2px solid #cfcfcf;
+      background: white;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      user-select: none;
+    }
+
+    /* Simplified single triangle pointing up */
+    .arrow-shape {
+      width: 50px;
+      height: 50px;
+      clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+      background: #6e6e6e;
+      border-radius: 4px;
+      margin: 0 auto;
+    }
+
+    /* Rotate the down arrow 180deg to point down */
+    .joy-arrow.down .arrow-shape {
+      transform: rotate(180deg);
+    }
+
+    /* Arrows placement */
+    .joy-arrow.up {
+      grid-column: 2;
+      grid-row: 1;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .joy-arrow.down {
+      grid-column: 2;
+      grid-row: 3;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .joy-arrow {
+      cursor: pointer;
+      border-radius: 8px; /* optional: rounded hover background */
+      padding: 4px;       /* optional: some padding for easier hover */
+    }
+
+    .joy-arrow:hover .arrow-shape {
+      background-color: #434343; /* darker gray on hover */
+    }
+
+    .joy-center {
+      border: 2px solid #cfcfcf;
+      background: white;
+      display: grid;
+      place-items: center;
+      font-weight: 600;
+      user-select: none;
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      cursor: pointer;
+      border-style: solid;
+      outline: none;
+    }
+
+
+    /* Hover background change */
+    .joy-center:hover {
+      background-color: #f0f0f0;
+      border-color: #a0a0a0;
+    }
+
+    /* Active (click) background and border */
+    .joy-center:active {
+      background-color: #d0d0d0;
+      border-color: #707070;
+    }
+
+    /* Buttons */
+    .btn {
+      width: 56px;
+      height: 56px;
+      border-radius: 12px;
+      border: 2px solid transparent;
+      background: white;
+      cursor: pointer;
+      font-size: 28px;
+      font-weight: 700;
+      color: #2c3e50;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      user-select: none;
+      transition: background-color 0.2s ease, border-color 0.2s ease;
+      margin: 0 auto;
+    }
+
+    .btn:hover {
+      background-color: #eee;
+    }
+
+    .blade-container {
+      padding-left: 12px;
+      padding-right: 12px;
+    }
+
+    /* Left buttons - bounded blue */
+    .btn.left {
+      border-color: #618daa;
+      color: #556f81;
+    }
+
+    /* Right buttons - bounded red */
+    .btn.right {
+      border-color: #f1948a;
+      color: #b03a2e;
+    }
+
+    /* Labels */
+    .label {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 600;
+      color: #2c3e50;
+      user-select: none;
+      margin: 0;
+    }
+
+    .label.left {
+      color: #446a84; /* blue */
+    }
+
+    .label.right {
+      color: #b03a2e; /* red */
+    }
+
+
+    /* Servo column on far right */
+    .servo-col{grid-column:4 / 5; grid-row:1; height:320px; display:grid; grid-template-rows: 1fr auto 1fr; gap:18px;}
+    .servo-btn {
+      background: var(--servo);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 28px;
+      color: #222;
+      cursor: pointer;
+    }
+
+    .servo-btn:hover {
+      background-color: #ffe492; /* lighter highlight color */
+      color: #000000;            /* slightly darker text */
+    }
+
+    /* simple arrow triangles */
+    .tri{width:0; height:0; border-left:18px solid transparent; border-right:18px solid transparent;}
+    .upTri{border-bottom:26px solid #222;}
+    .downTri{border-top:26px solid #222;}
+
+    /* ——— Row 2 ——— */
+    .home{grid-column:1 / 2; grid-row:2; height:56px; background:var(--home); border-radius:12px; display:grid; place-items:center; font-weight:700; font-size:26px; letter-spacing:.4px;}
+
+    .select{grid-column:2 / 4; grid-row:2; height:56px; position:relative;}
+    .select select{
+      appearance:none; -webkit-appearance:none; -moz-appearance:none;
+      width:100%; height:100%; border:2px solid #d3d3d3; border-radius:12px; padding:0 54px 0 16px; font-size:18px; color:#222; background:#fff;
+    }
+    .select .chev{position:absolute; right:16px; top:50%; transform:translateY(-50%) rotate(90deg); width:0; height:0; border-top:8px solid transparent; border-bottom:8px solid transparent; border-left:12px solid #222;}
+
+    .stop{grid-column:4 / 5; grid-row:2; height:96%; background:var(--stop); border-radius:12px; display:grid; place-items:center; color:#fff; font-weight:800; font-size:15px;}
+    
+    .home, .stop {
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      /* Reset button default appearance */
+      -webkit-appearance: none;
+      -moz-appearance: none;
+      appearance: none;
+    }
+
+    .home {
+      grid-column: 1 / 2;
+      grid-row: 2;
+      height: 56px;
+      background: var(--home);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 26px;
+      letter-spacing: 0.4px;
+      color: inherit; /* keep text color */
+    }
+
+    .stop {
+      grid-column: 4 / 5;
+      grid-row: 2;
+      height: 96%;
+      background: var(--stop);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      color: #fff;
+      font-weight: 800;
+      font-size: 15px;
+    }
+
+    /* Optional: button hover effect */
+    .home:hover {
+      filter: brightness(0.9);
+    }
+
+    .stop:hover {
+      filter: brightness(0.85);
+    }
+
+    
+    /* ——— Row 3 ——— */
+    .slider-wrap {
+      grid-column: 1 / 3;
+      grid-row: 3;
+      display: 20px;
+      flex-direction: column;
+      justify-content: center,
+      align-items: center;
+      position: relative;
+    }
+
+    /* Hide default slider track and style custom */
+    .slider {
+      appearance: none;
+      width: 100%;
+      height: 15px;
+      background: #d9d9d9;
+      border-radius: 11px;
+      outline: none;
+      margin: 0;
+      position: relative;
+      cursor: pointer;
+    }
+
+    /* Thumb styling */
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 28px;
+      height: 28px;
+      background: #79a076;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid #526756;
+      margin-top: -4px; /* center thumb vertically */
+      transition: background-color 0.2s ease;
+    }
+
+    .slider::-webkit-slider-thumb:hover {
+      background-color: #526756;
+    }
+
+    .slider::-moz-range-thumb {
+      width: 28px;
+      height: 28px;
+      background: #79a076;
+      border-radius: 50%;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .slider::-moz-range-thumb:hover {
+      background-color: #526756;
+    }
+
+    /* Dots */
+    .dots {
+      position: relative;
+      height: 20px;
+      top: -10px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none; /* dots not clickable */
+    }
+
+    .dot {
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #b3b3b3;
+      position: relative;
+      top: -30px;
+    }
+
+    /* Highlight dot based on slider value — optional with JS */
+
+    /* Ticks */
+    .ticks {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: #333;
+      margin-bottom: 6px;
+    }
+
+    /* Brush button */
+    .brush {
+      grid-column: 3 / 5;
+      grid-row: 3;
+      height: 64px;
+      background: var(--brush);
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+      font-size: 26px;
+      color: white;
+      border: none;
+      cursor: pointer;
+      user-select: none;
+      transition: background-color 0.2s ease;
+    }
+
+    .brush:hover {
+      background-color: #47614b; /* slightly darker shade */
+    }
+
+    /* ——— Row 4 ——— */
+    .btn {
+      width: 100%;
+      height: 96px;
+      border-radius: 12px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      font-family: inherit;
+      color: inherit;
+      box-sizing: border-box;
+    }
+
+    /* Arm Extend and Retract */
+    .extend, .retract {
+      background: #f6b171;
+      color: #000;
+    }
+    .extend:hover, .retract:hover {
+      background: #d9974f;
+    }
+
+    /* Water button */
+    .water {
+      background: var(--water);
+      color: #fff;
+    }
+    .water.active {
+      background: var(--water); /* original */
+    }
+    .water:not(.active) {
+      background: #204362; /* darkened */
+    }
+
+    /* AI button */
+    .ai {
+      background: var(--ai);
+      color: #fff;
+    }
+    .ai.active {
+      background: var(--ai); /* original */
+    }
+    .ai:not(.active) {
+      background: #2b1c55; /* darkened */
+    }
+
+    /* Small screens */
+    @media (max-width: 980px){
+      .grid{grid-template-columns:1fr; grid-template-rows:auto;}
+      .video,.side-cam,.drive-stack,.servo-col,.home,.select,.stop,.slider-wrap,.brush,.extend,.retract,.water,.ai{grid-column:auto; grid-row:auto;}
+      .drive-stack{height:280px}
+      .servo-col{height:220px}
+    }
+    .dual-circle {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      background: var(--water); /* outer ring for Set Zero */
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      cursor: pointer;
+      box-shadow: inset 0 0 0 2px #4a9ad6;
+      transition: background-color 0.2s ease;
+    }
+
+    .dual-circle:hover {
+      background-color: #377fc2;
+    }
+
+    .inner-circle {
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--stop); /* red inner circle */
+      color: #fff;
+      font-size: 13px;
+      font-weight: 600;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: absolute;
+      pointer-events: auto;
+      cursor: pointer;
+      transition: background-color 0.2s ease;
+    }
+
+    .inner-circle:hover {
+      background-color: #a32121;
+    }
+
+
+  </style>
 </head>
+
+
 <body>
-    <h1>AI Camera Live Stream</h1>
+  <div class="wrap">
+    <div class="grid">
 
-    <div id="videoContainer">
-        <img id="stream" src="{{ url_for('video_feed') }}" alt="Live stream not available">
+
+      <!-- Row 1 -->
+      <div class="video">
+        <img
+          id="stream"
+          src="{{ url_for('video_feed') }}"
+          alt="Live stream not available"
+          style="width: 100%; height: 100%; object-fit: cover;"
+        />
+      </div>
+
+      <div class="side-cam">
+        <h3>Status Monitor</h3>
+	  <div>Heartbeat: <span id="heartbeat">--</span></div>
+	  <div>Brush: <span id="brushStatus">--</span></div>
+	  <div>Actuator Pos: <span id="actuatorPos">--</span></div>
+	  <div>Robot Pos: <span id="servoPos">--</span></div>
+	  <div>Brush Speed: <span id="speeed">--</span></div>
+	  <div>AI Result: <span id="aiR">--</span></div>
+      </div>
+
+      <div class="drive-stack">
+        <div class="joystick-grid">
+          
+          <!-- Left column container -->
+          <div class="blade-container left">
+            <button class="btn plus left" onpointerdown="sendCommand('holdup1')" onpointerup="sendCommand('stop')" onpointerleave="sendCommand('stop')">+</button>
+            <div class="label left">Left Motor</div>
+            <button class="btn minus left" onpointerdown="sendCommand('holddown1')" onpointerup="sendCommand('stop')" onpointerleave="sendCommand('stop')">-</button>
+          </div>
+
+          <!-- Center column -->
+          <button class="joy-arrow up" aria-label="Move Up" onclick="sendCommand('up')">
+            <div class="arrow-shape"></div>
+          </button>
+          <div class="dual-circle" onclick="sendCommand('zero')">
+            <div class="inner-circle" onclick="event.stopPropagation(); sendCommand('stop')">Stop</div>
+          </div>
+
+	  <button class="joy-arrow down" aria-label="Move Down" onclick="sendCommand('down')">
+            <div class="arrow-shape"></div>
+          </button>
+
+          
+          <!-- Right column container -->
+          <div class="blade-container right">
+            <button class="btn plus right" onpointerdown="sendCommand('holdup2')" onpointerup="sendCommand('stop')" onpointerleave="sendCommand('stop')">+</button>
+            <div class="label right">Right Motor</div>
+            <button class="btn minus right" onpointerdown="sendCommand('holddown2')" onpointerup="sendCommand('stop')" onpointerleave="sendCommand('stop')">-</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="servo-col">
+        <button class="servo-btn" id="servo-up" aria-label="Servo Up" onclick="armUp()">
+          <div class="tri upTri"></div>
+        </button>
+        <div class="servo-mid">Arm<br>Servo</div>
+        <button class="servo-btn" id="servo-down" aria-label="Servo Down" onclick="armDown()">
+          <div class="tri downTri"></div>
+        </button>
+      </div>
+
+
+      <!-- Row 2 -->
+      <button class="home" type="button" id="homeButton">Home</button>
+
+      <div class="select">
+        <select id="homingSelect">
+          <option value="" disabled selected>select homing mode</option>
+          <option value="all">All</option>
+          <option value="robot">Robot position</option>
+          <option value="arm">Arm</option>
+          <option value="actuator">Linear actuator</option>
+          <option value="arm-actuator">Arm + Actuator</option>
+        </select>
+        <span class="chev" aria-hidden="true"></span>
+      </div>
+
+      <button class="stop" type="button" onclick="stopAll()">Stop All</button>
+
+
+      <!-- Row 3 -->
+      <div class="slider-wrap">
+
+        <!-- Functional range input -->
+        <input
+          type="range"
+          class="slider"
+          min="0"
+          max="100"
+          step="25"
+          value="0"
+          id="percentSlider"
+        />
+	
+	<div class="ticks">
+          <span id = "speedvalues">0</span>%
+        </div>
+
+        <div class="dots">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+
+      <div class="brush" id="brushBtn" >Brush Speed</div>
+
+
+      <!-- Row 4 -->
+      <button class="btn extend" type="button" onclick="extend()"><span class="muted">Arm</span><b>Extend</b></button>
+      <button class="btn retract" type="button" onclick="retract()"><span class="muted">Arm</span><b>Retract</b></button>
+      <button class="btn water" type="button"><b>Water toggle</b></button>
+      <button class="btn ai" type="button" onclick="toggleAI()"><b>AI toggle</b></button>
     </div>
+  </div>
+  
+  <button class="btn" onclick="setAZero()">Set A Zero</button>
+  <button class="btn" onclick="setZero()">Set Zero</button>
 
-    <div class="info">
-        <p>Live feed from Raspberry Pi AI Camera (IMX500)</p>
-    </div>
-
-    <div class="controls">
-        <button class="btn" onclick="toggleStream()">Pause / Resume</button>
-    </div>
-
-    <script>
+      <script>
         let streamActive = true;
         const stream = document.getElementById("stream");
 
         function toggleStream() {
-            if (streamActive) {
-                stream.src = "";
-            } else {
-                stream.src = "/video_feed";
-            }
-            streamActive = !streamActive;
+          if (streamActive) {
+            stream.src = "";
+          } else {
+            stream.src = "/video_feed";
+          }
+          streamActive = !streamActive;
         }
+
+        function sendCommand(cmd) {
+                  fetch('/' + cmd)
+          .then(res => res.text())
+          .then(data => console.log(data));
+        }       
+
+        function armUp() {
+                  fetch('/arm_up');
+              }
+
+        function armDown() {
+                  fetch('/arm_down');
+              }        
+     
+      document.getElementById("homeButton").addEventListener("click", function () {
+        const select = document.getElementById("homingSelect");
+        const selectedMode = select.value;
+
+        if (!selectedMode) {s
+          alert("Please select a homing mode.");
+          return;
+        }
+
+        // dropdown: Only trigger /homeACTandARM for "arm-actuator" for now
+        if (selectedMode === "arm-actuator") {
+          fetch("/homeACTandARM", {
+            method: "GET"
+          })
+          .then(response => response.text())
+          .then(data => {
+            console.log("Success:", data);
+            alert("Arm and Actuator homing started.");
+          })
+          .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to start homing.");
+          });
+        } else if (selectedMode === "actuator"){
+          fetch("/homeACT", {
+            method: "GET"
+          })
+          .then(response => response.text())
+          .then(data => {
+            console.log("Success:", data);
+            alert("Arm and Actuator homing started.");
+          })
+          .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to start homing.");
+          });
+        } else if (selectedMode === "arm"){
+          fetch("/homeARM", {
+            method: "GET"
+          })
+          .then(response => response.text())
+          .then(data => {
+            console.log("Success:", data);
+            alert("Arm and Actuator homing started.");
+          })
+          .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to start homing.");
+          });
+        } else if (selectedMode === "robot"){
+          fetch("/homeROBOT", {
+            method: "GET"
+          })
+          .then(response => response.text())
+          .then(data => {
+            console.log("Success:", data);
+            alert("Arm and Actuator homing started.");
+          })
+          .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to start homing.");
+          });
+        } else if (selectedMode === "all"){
+          fetch("/homeALL", {
+            method: "GET"
+          })
+          .then(response => response.text())
+          .then(data => {
+            console.log("Success:", data);
+            alert("Arm and Actuator homing started.");
+          })
+          .catch(error => {
+            console.error("Error:", error);
+            alert("Failed to start homing.");
+          });
+        }
+      });
+
+      function stopAll() {
+         fetch('/stopAll');
+      }
+
+      function extend() {
+         fetch('/extend');
+      }
+
+      function retract() {
+         fetch('/retract');
+      }
+      
+      function setAZero() {
+            fetch('/setAZero');
+      }
+      
+      function setZero() {
+            fetch('/setZero');
+      }
+  
+      const slider = document.getElementById("percentSlider");
+      const display = document.getElementById("speedvalue"); 
+      const tickSpans = document.querySelectorAll(".ticks span");
+
+      slider.addEventListener('input', function() {
+        display.textContent = slider.value;
+      });
+
+      // Send to Flask when slider is released
+      slider.addEventListener('change', function() {
+          fetch('/get_slider?value=' + slider.value, { method: 'POST' })
+            .then(res => res.text())
+            .then(data => console.log('Server says:', data))
+            .catch(err => console.error('Error sending slider value:', err));
+      });
+      
+      slider.addEventListener('change', function () {
+        const normalized = slider.value / 100;
+        fetch('/set_slider?value=' + normalized, { method: 'POST' })  // POST is optional now
+          .then(res => res.json())
+          .then(data => {
+            console.log('Server returned new value:', data.value);
+          })
+          .catch(err => console.error('Error sending slider value:', err));
+      });
+      
+      function refreshFromServer() {
+        fetch('/set_slider')
+          .then(r => r.json())
+          .then(({ value }) => {
+            const uiVal = Math.round(value * 100);
+            const curVal = Number(slider.value);
+            if (Math.abs(uiVal - curVal) > 1e-3 && document.activeElement !== slider) {
+              slider.value = uiVal;
+              speedvalues.textContent = uiVal;
+            }
+          })
+          .catch(err => console.error("Fetch error:", err));
+      }
+
+      setInterval(refreshFromServer, 3000);
+      refreshFromServer();
+
+      function updateStatus() {
+          fetch('/status')
+            .then(res => res.json())
+            .then(data => {
+          	console.log(data);
+
+                // Slider update
+                if (data.slider !== undefined) {
+                   if (parseInt(slider.value) !== data.slider) {
+                       slider.value = data.slider;
+                       display.textContent = data.slider;
+                   }
+                }
+
+                // Other UI elements
+                document.getElementById("heartbeat").innerText = data.heartbeat_ok ? "heartbeat ok" : "heartbeat LOST";
+                document.getElementById("brushStatus").innerText = data.brush_on ? "ON" : "OFF";
+                document.getElementById("actuatorPos").innerText = data.actuator_position ?? "N/A";
+                document.getElementById("servoPos").innerText = "home";
+                document.getElementById("speeed").innerText = data.brush_speed ?? "N/A";
+                document.getElementById("aiR").innerText = data.ai_result ?? "N/A";
+            })
+            .catch(err => console.error('Error fetching status:', err));
+      }
+
+
+      const waterBtn = document.querySelector('.water');
+      const aiBtn = document.querySelector('.ai');
+
+      // Only Water button starts as active toggle
+      waterBtn.addEventListener('click', () => {
+        waterBtn.classList.toggle('active');
+      });
+
+
+      function toggleAI() {
+            fetch('/toggle_ai');
+      }
+
+      setInterval(updateStatus, 3000);
+      updateStatus();
+
     </script>
+
+
 </body>
 </html>
